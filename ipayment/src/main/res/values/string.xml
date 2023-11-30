@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pay_loading">正在支付…</string>
+    <string name="pay_ali_loading">正在使用支付宝支付…</string>
+    <string name="pay_wechat_loading">正在使用微信支付…</string>
+</resources>
