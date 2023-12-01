@@ -7,5 +7,8 @@ enum class PaymentType {
     PAY_TYPE_ALI,
 
     @SerializedName("PAY_TYPE_WX")
-    PAY_TYPE_WX
+    PAY_TYPE_WX,
+
+    @SerializedName("PAY_TYPE_OTHER")
+    PAY_TYPE_OTHER
 }

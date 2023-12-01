@@ -1,11 +1,14 @@
 package com.ifeng.ipayment
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Dialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
@@ -20,7 +23,8 @@ import com.tencent.mm.opensdk.modelpay.PayReq
 import com.tencent.mm.opensdk.openapi.WXAPIFactory
 
 
-class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialogBuilder) : Dialog(context) {
+class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialogBuilder) :
+    Dialog(context) {
 
     companion object {
         const val KEY_STATUS = "resultStatus"
@@ -29,7 +33,7 @@ class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialog
 
     private var receiver: WxPayBroadcastReceiver? = null
 
-    val binding: DialogIpaymentLoadingBinding by lazy {
+    private val binding: DialogIpaymentLoadingBinding by lazy {
         val inflater: LayoutInflater =
             context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         DialogIpaymentLoadingBinding.inflate(inflater)
@@ -39,10 +43,16 @@ class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialog
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
+        this.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        this.window?.setGravity(Gravity.CENTER)
+        this.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+
+
         with(builder) {
             when (payType) {
                 PaymentType.PAY_TYPE_ALI -> doAliPay(payBody)
                 PaymentType.PAY_TYPE_WX -> doWxPay(payModel)
+                PaymentType.PAY_TYPE_OTHER -> setResultForPaymentCallback(PaymentResult.PAYMENT_UNSUPPORTED_PAY)
                 else -> {
                     setResultForPaymentCallback(PaymentResult.PAYMENT_ERROR)
                 }
@@ -52,46 +62,54 @@ class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialog
     }
 
     private fun doWxPay(payModel: Wechat?) {
-        payModel?.let { payModel->
-            receiver = WxPayBroadcastReceiver()
-            val filter = IntentFilter("we.chat.pay")
-            ownerActivity?.registerReceiver(receiver, filter)
+        payModel?.let { payModel ->
+            try {
+                receiver = WxPayBroadcastReceiver()
+                val filter = IntentFilter("we.chat.pay")
+                ownerActivity?.registerReceiver(receiver, filter)
 
-            val msgApi = WXAPIFactory.createWXAPI(ownerActivity, payModel.appid, true)
-            if (msgApi.isWXAppInstalled && msgApi.wxAppSupportAPI >= Build.SUBSCRIBE_MESSAGE_SUPPORTED_SDK_INT) {
-                msgApi.registerApp(payModel.appid)
-                val request = PayReq()
-                request.appId = payModel.appid
-                request.partnerId = payModel.partnerid
-                request.prepayId = payModel.prepayid
-                request.packageValue = payModel.packages
-                request.nonceStr = payModel.noncestr
-                request.timeStamp = payModel.timestamp
-                request.sign = payModel.sign
-                msgApi.sendReq(request)
-            } else {
-                setResultForPaymentCallback(PaymentResult.PAYMENT_SUPPORTED_SDK)
+                val msgApi = WXAPIFactory.createWXAPI(ownerActivity, payModel.appid, true)
+                if (msgApi.isWXAppInstalled && msgApi.wxAppSupportAPI >= Build.SUBSCRIBE_MESSAGE_SUPPORTED_SDK_INT) {
+                    msgApi.registerApp(payModel.appid)
+                    val request = PayReq()
+                    request.appId = payModel.appid
+                    request.partnerId = payModel.partnerid
+                    request.prepayId = payModel.prepayid
+                    request.packageValue = payModel.packages
+                    request.nonceStr = payModel.noncestr
+                    request.timeStamp = payModel.timestamp
+                    request.sign = payModel.sign
+                    msgApi.sendReq(request)
+                } else {
+                    setResultForPaymentCallback(PaymentResult.PAYMENT_UNSUPPORTED_WX_SDK)
+                }
+            } catch (e: Exception) {
+                setResultForPaymentCallback(PaymentResult.PAYMENT_FAIL)
             }
-        }?: run {
+        } ?: run {
             setResultForPaymentCallback(PaymentResult.PAYMENT_FAIL)
         }
     }
 
 
     private fun doAliPay(payBody: String?) {
-        payBody?.let { payBody->
-            val payRunnable = Runnable {
-                val alipay = PayTask(ownerActivity)
-                val result: Map<String, String> = alipay.payV2(payBody, true)
-                val msg = Message()
-                msg.what = SDK_PAY_FLAG
-                msg.obj = result
-                mHandler.sendMessage(msg)
+        payBody?.let { payBody ->
+            try {
+                val payRunnable = Runnable {
+                    val alipay = PayTask(ownerActivity)
+                    val result: Map<String, String> = alipay.payV2(payBody, true)
+                    val msg = Message()
+                    msg.what = SDK_PAY_FLAG
+                    msg.obj = result
+                    mHandler.sendMessage(msg)
+                }
+                // 必须异步调用
+                val payThread = Thread(payRunnable)
+                payThread.start()
+            } catch (e: Exception) {
+                setResultForPaymentCallback(PaymentResult.PAYMENT_FAIL)
             }
-            // 必须异步调用
-            val payThread = Thread(payRunnable)
-            payThread.start()
-        }?: run {
+        } ?: run {
             setResultForPaymentCallback(PaymentResult.PAYMENT_FAIL)
         }
 
@@ -165,11 +183,13 @@ class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialog
         }
     }
 
-    class IPaymentLoadingDialogBuilder(private val context: Context) {
+    class IPaymentLoadingDialogBuilder(private val activity: Activity) {
         var description: String? = null
         var payType: PaymentType? = null
+
         // 微信支付
         var payModel: Wechat? = null
+
         // 支付宝支付
         var payBody: String? = null
 
@@ -181,10 +201,10 @@ class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialog
         fun setPayType(value: PaymentType): IPaymentLoadingDialogBuilder =
             apply { this.payType = value }
 
-        fun setPayModel(value: Wechat): IPaymentLoadingDialogBuilder =
+        fun setPayModel(value: Wechat?): IPaymentLoadingDialogBuilder =
             apply { this.payModel = value }
 
-        fun setPayBody(value: String): IPaymentLoadingDialogBuilder =
+        fun setPayBody(value: String?): IPaymentLoadingDialogBuilder =
             apply { this.payBody = value }
 
 
@@ -193,8 +213,12 @@ class IPaymentLoadingDialog(context: Context, val builder: IPaymentLoadingDialog
 
 
         fun build(): IPaymentLoadingDialog = IPaymentLoadingDialog(
-            context = context,
+            context = activity,
             builder = this
-        )
+        ).apply {
+            setOwnerActivity(activity)
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            setCancelable(false)
+        }
     }
 }
