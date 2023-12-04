@@ -15,6 +15,9 @@ enum class PaymentResult {
     @SerializedName("PAYMENT_ERROR")
     PAYMENT_ERROR,
 
-    @SerializedName("PAYMENT_SUPPORTED_SDK")
-    PAYMENT_SUPPORTED_SDK
+    @SerializedName("PAYMENT_UNSUPPORTED_PAY")
+    PAYMENT_UNSUPPORTED_PAY,
+
+    @SerializedName("PAYMENT_UNSUPPORTED_WX_SDK")
+    PAYMENT_UNSUPPORTED_WX_SDK
 }
