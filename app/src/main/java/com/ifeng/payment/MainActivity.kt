@@ -1,12 +1,13 @@
 package com.ifeng.payment
 
-import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.TextView
 import com.ifeng.ipayment.IPaymentLoadingDialog
-import com.ifeng.ipayment.data.PaymentResult
-import com.ifeng.ipayment.data.PaymentType
+import com.ifeng.ipayment.IPaymentManager
+import com.ifeng.ipayment.data.IPaymentDto
+import com.ifeng.ipayment.data.IPaymentResult
+import com.ifeng.ipayment.data.IPaymentType
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,33 +17,38 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.text_click).setOnClickListener {
             // TEST CODE
-            IPaymentLoadingDialog.IPaymentLoadingDialogBuilder(this)
-                .setPayType(PaymentType.PAY_TYPE_ALI)
-                .setPayBody("test")
-                .setOnPaymentResultCallback { result ->
-                    when (result) {
-                        PaymentResult.PAYMENT_SUCCEED ->{
+            IPaymentManager.showIPaymentLoadingDialog(
+                supportFragmentManager,
+                paymentDto = IPaymentDto(
+                    payType = IPaymentType.PAY_TYPE_ALI,
+                    payBody = "test-ali-pay-body",
+                ),
+                onIPaymentCallback = object : IPaymentManager.Callback{
+                    override fun onResult(result: IPaymentResult) {
+                        when (result) {
+                            IPaymentResult.PAYMENT_SUCCEED -> {
 
-                        }
-                        PaymentResult.PAYMENT_ERROR ->{
+                            }
+                            IPaymentResult.PAYMENT_ERROR -> {
 
-                        }
-                        PaymentResult.PAYMENT_CANCEL ->{
+                            }
+                            IPaymentResult.PAYMENT_CANCEL -> {
 
-                        }
-                        PaymentResult.PAYMENT_FAIL ->{
+                            }
+                            IPaymentResult.PAYMENT_FAIL -> {
 
-                        }
-                        PaymentResult.PAYMENT_UNSUPPORTED_PAY->{
+                            }
+                            IPaymentResult.PAYMENT_UNSUPPORTED_PAY -> {
 
-                        }
-                        PaymentResult.PAYMENT_UNSUPPORTED_WX_SDK->{
+                            }
+                            IPaymentResult.PAYMENT_UNSUPPORTED_WX_SDK -> {
 
+                            }
                         }
                     }
-                }.build().show()
+                }
+            )
         }
-
     }
 
 }

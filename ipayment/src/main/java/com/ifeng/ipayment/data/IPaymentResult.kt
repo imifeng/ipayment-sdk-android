@@ -2,7 +2,7 @@ package com.ifeng.ipayment.data
 
 import com.google.gson.annotations.SerializedName
 
-enum class PaymentResult {
+enum class IPaymentResult {
     @SerializedName("PAYMENT_SUCCEED")
     PAYMENT_SUCCEED,
 

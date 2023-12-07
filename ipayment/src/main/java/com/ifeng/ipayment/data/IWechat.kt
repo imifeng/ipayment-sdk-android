@@ -12,7 +12,7 @@ import kotlinx.parcelize.Parcelize
 //            "package": "Sign=WXPay",
 //            "sign": "D9C4E576FB64A2B148F861C9A0634B49"
 @Parcelize
-data class Wechat(
+data class IWechat(
     val appid: String,
     val partnerid: String,
     val prepayid: String,

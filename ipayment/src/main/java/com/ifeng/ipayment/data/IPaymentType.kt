@@ -2,7 +2,7 @@ package com.ifeng.ipayment.data
 
 import com.google.gson.annotations.SerializedName
 
-enum class PaymentType {
+enum class IPaymentType {
     @SerializedName("PAY_TYPE_ALI")
     PAY_TYPE_ALI,
 
