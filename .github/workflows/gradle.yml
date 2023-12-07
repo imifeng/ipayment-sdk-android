@@ -24,10 +24,10 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
 
       - name: Build with Debug
-        run: ./gradlew assembleBaiduDebug
+        run: ./gradlew build
 
       - name: Build with ipayment module
         run: ./gradlew :ipayment:build
