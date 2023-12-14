@@ -28,6 +28,3 @@ jobs:
 
       - name: Build with Debug
         run: ./gradlew build
-
-      - name: Build with ipayment module
-        run: ./gradlew :ipayment:build
